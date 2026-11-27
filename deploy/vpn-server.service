@@ -1,0 +1,27 @@
+[Unit]
+Description=Custom User-Space Layer 3 VPN Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vpn
+Group=vpn
+ExecStart=/usr/local/bin/vpn-server -config /etc/vpn/server.yaml
+Restart=on-failure
+RestartSec=3s
+
+# Grant CAP_NET_ADMIN without running as full root
+AmbientCapabilities=CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_ADMIN
+
+RuntimeDirectory=vpn
+StateDirectory=vpn-server
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

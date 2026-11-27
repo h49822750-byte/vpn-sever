@@ -1,0 +1,12 @@
+# Example vpn-client configuration
+server_addr: "vpn.example.com:51820"
+server_public_key: "REPLACE_WITH_SERVER_ED25519_PUBLIC_KEY_BASE64"
+private_key: "REPLACE_WITH_CLIENT_ED25519_PRIVATE_KEY_BASE64"
+psk: ""
+cipher_suite: "chacha20-poly1305"
+tun_name: "tun0"
+routes:
+  - "10.100.0.0/24"
+keepalive_interval: 25s
+rekey_interval: 50m
+log_level: "info"

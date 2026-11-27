@@ -1,0 +1,16 @@
+# Compiled binaries
+bin/
+agy_cmd
+
+# Local environment secrets
+.env
+
+# Live runtime configs & private keys (keep *.example.yaml templates)
+configs/*.yaml
+!configs/*.example.yaml
+configs/ios/
+configs/tls/
+
+# SQLite databases
+*.sqlite
+*.sqlite-*

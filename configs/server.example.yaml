@@ -1,0 +1,51 @@
+# Example vpn-server configuration (see spec.md)
+listen_addr: "0.0.0.0:51820"
+
+# Generate with: vpnctl keygen
+private_key: "REPLACE_WITH_SERVER_ED25519_PRIVATE_KEY_BASE64"
+
+# Supported AEAD suites: "chacha20-poly1305" (default) or "aes-256-gcm"
+cipher_suite: "chacha20-poly1305"
+
+# Multi-core scaling: sets IFF_MULTI_QUEUE on /dev/net/tun and SO_REUSEPORT on UDP sockets when > 1
+workers: 2
+socket_buffer_bytes: 16777216 # 16 MiB
+
+# Optional unprivileged user to drop to after CAP_NET_ADMIN initialization
+drop_user: ""
+
+tun:
+  name: "tun0"
+  cidr: "10.100.0.1/24"
+  mtu: 1400
+
+nat:
+  enable: true
+  # Set to "eth0" (explicit) or "auto" (detect default route interface via Netlink)
+  egress_interface: "eth0"
+  table_name: "vpn_nat"
+
+security:
+  key_rotation_interval: 1h
+  max_packets: 4294967296 # 2^32
+  idle_timeout: 3m
+  max_handshake_skew: 2m
+
+control:
+  socket_path: "/run/vpn.sock"
+
+storage:
+  sqlite_path: "/var/lib/vpn-server/peers.sqlite"
+
+observability:
+  log_level: "info"
+  metrics_addr: "127.0.0.1:9090"
+
+tuning:
+  enable: true
+
+peers:
+  - name: "laptop-alice"
+    public_key: "REPLACE_WITH_CLIENT_ED25519_PUBLIC_KEY_BASE64"
+    psk: ""
+    virtual_ip: "10.100.0.2"

@@ -1,0 +1,80 @@
+services:
+  vpn-server:
+    build: .
+    image: vpn-server:latest
+    container_name: vpn-server
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      - net.ipv4.ip_forward=1
+    ports:
+      - "51820:51820/udp"
+      - "127.0.0.1:9090:9090/tcp"
+    volumes:
+      - ./configs:/etc/vpn:ro
+      - vpn-data:/var/lib/vpn-server
+    restart: unless-stopped
+
+  vpn-ios:
+    build:
+      context: .
+      dockerfile: deploy/ios-gateway/Dockerfile
+    image: vpn-ios-gateway:latest
+    container_name: vpn-ios
+    depends_on:
+      vpn-server:
+        condition: service_healthy
+    environment:
+      - PUBLIC_ENDPOINT=${PUBLIC_IP:-203.0.113.10}:51821
+      - WG_PORT=51821
+      - WG_PORT_RANGE_END=51840
+      - DNS_SERVERS=1.1.1.1, 8.8.8.8
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.rp_filter=0
+      - net.ipv4.conf.default.rp_filter=0
+    ports:
+      - "51821-51840:51821-51840/udp"
+    volumes:
+      - ./configs:/etc/vpn:ro
+      - ./configs/ios:/etc/vpn-ios
+    restart: unless-stopped
+
+  vpn-tls:
+    build: .
+    image: vpn-server:latest
+    container_name: vpn-tls
+    network_mode: "host"
+    entrypoint: ["/usr/local/bin/vpn-tls-gateway"]
+    command:
+      - "-listen=0.0.0.0:443"
+      - "-cert=/etc/vpn-tls/cert.pem"
+      - "-key=/etc/vpn-tls/key.pem"
+      - "-san-ip=${PUBLIC_IP:-203.0.113.10}"
+    environment:
+      - TLS_PROXY_USER=${TLS_PROXY_USER:-vpnclient}
+      - TLS_PROXY_PASS=${TLS_PROXY_PASS:?set TLS_PROXY_PASS in .env}
+    volumes:
+      - ./configs/tls:/etc/vpn-tls
+    healthcheck:
+      test: ["CMD", "/bin/sh", "-c", "ss -tln | grep -q ':443 '"]
+      interval: 10s
+      timeout: 3s
+      start_period: 3s
+      retries: 3
+    restart: unless-stopped
+
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: "1460"
+
+volumes:
+  vpn-data:
